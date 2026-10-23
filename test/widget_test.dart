@@ -1,30 +1,81 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:maquetacion_interactiva/main.dart';
+import 'package:maquetacion_interactiva/screens/components_screen.dart';
+import 'package:maquetacion_interactiva/screens/home_screen.dart';
+import 'package:maquetacion_interactiva/screens/login_screen.dart';
+
+Future<void> pumpApp(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(1280, 720);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(const MaquetacionApp());
+  await tester.pumpAndSettle();
+}
+
+Finder inputField(String label) => find.descendant(
+  of: find.widgetWithText(AppInput, label),
+  matching: find.byType(TextField),
+);
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUpAll(() async {
+    final loader = FontLoader('Inter');
+    for (final weight in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+      loader.addFont(rootBundle.load('assets/fonts/Inter-$weight.ttf'));
+    }
+    await loader.load();
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  testWidgets('La app arranca en Login', (tester) async {
+    await pumpApp(tester);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.text('Bienvenido de nuevo'), findsOneWidget);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('Credenciales incorrectas muestran un error', (tester) async {
+    await pumpApp(tester);
+
+    await tester.enterText(inputField('Correo electrónico'), 'otro@correo.com');
+    await tester.enterText(inputField('Contraseña'), 'Incorrecta1');
+    await tester.tap(find.text('Iniciar sesión'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(LoginScreen.wrongCredentialsMessage), findsWidgets);
+    expect(find.byType(HomeScreen), findsNothing);
+  });
+
+  testWidgets('Login con la cuenta demo abre Home y cierra sesión', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+
+    await tester.enterText(
+      inputField('Correo electrónico'),
+      AuthStore.demoEmail,
+    );
+    await tester.enterText(inputField('Contraseña'), AuthStore.demoPassword);
+    await tester.tap(find.text('Iniciar sesión'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HomeScreen), findsOneWidget);
+    expect(find.text(AuthStore.demoEmail), findsOneWidget);
+
+    await tester.tap(find.text('Cerrar sesión'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  testWidgets('Mantener presionado el logo abre Componentes', (tester) async {
+    await pumpApp(tester);
+
+    await tester.longPress(find.byType(GradientIconBadge));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ComponentsScreen), findsOneWidget);
   });
 }
