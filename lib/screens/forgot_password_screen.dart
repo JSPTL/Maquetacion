@@ -59,12 +59,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
 
     FocusScope.of(context).unfocus();
-    authStore.startPasswordRecovery(_emailController.text);
-    showAppMessage(
-      context,
-      'Te enviamos un código a ${authStore.recoveryEmail}',
-      type: AppMessageType.success,
-    );
+    session.recoveryEmail = _emailController.text.trim();
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const VerifyCodeScreen()));

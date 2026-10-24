@@ -64,7 +64,6 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
   void _submit() {
     if (!_canSubmit) return;
-    authStore.resetPassword(_password);
     showAppMessage(
       context,
       NewPasswordScreen.successMessage,
@@ -77,7 +76,6 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   Widget build(BuildContext context) {
     return AuthLayout(
       decorations: _decorations,
-      onBack: () => Navigator.of(context).pop(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

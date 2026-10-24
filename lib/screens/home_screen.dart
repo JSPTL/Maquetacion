@@ -35,10 +35,10 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
-  final String? _email = authStore.currentUser?.email;
+  final String? _email = session.email;
 
   void _logout() {
-    authStore.logout();
+    session.email = null;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,

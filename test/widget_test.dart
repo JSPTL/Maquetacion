@@ -3,12 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:maquetacion_interactiva/main.dart';
-import 'package:maquetacion_interactiva/screens/components_screen.dart';
 import 'package:maquetacion_interactiva/screens/home_screen.dart';
 import 'package:maquetacion_interactiva/screens/login_screen.dart';
 
 Future<void> pumpApp(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(1280, 720);
+  tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(const MaquetacionApp());
@@ -29,40 +28,44 @@ void main() {
     await loader.load();
   });
 
-  testWidgets('La app arranca en Login', (tester) async {
+  testWidgets('La app arranca en Login con barra de estado', (tester) async {
     await pumpApp(tester);
 
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.text('Bienvenido de nuevo'), findsOneWidget);
+    expect(find.byType(AppStatusBar), findsOneWidget);
   });
 
-  testWidgets('Credenciales incorrectas muestran un error', (tester) async {
+  testWidgets('Correo inválido muestra error y no avanza', (tester) async {
     await pumpApp(tester);
 
-    await tester.enterText(inputField('Correo electrónico'), 'otro@correo.com');
-    await tester.enterText(inputField('Contraseña'), 'Incorrecta1');
+    await tester.enterText(inputField('Correo electrónico'), 'usuario@correo');
+    await tester.enterText(inputField('Contraseña'), 'clave');
     await tester.tap(find.text('Iniciar sesión'));
     await tester.pumpAndSettle();
 
-    expect(find.text(LoginScreen.wrongCredentialsMessage), findsWidgets);
+    expect(
+      find.text('Ingresa un correo válido (ejemplo: usuario@dominio.com)'),
+      findsOneWidget,
+    );
     expect(find.byType(HomeScreen), findsNothing);
   });
 
-  testWidgets('Login con la cuenta demo abre Home y cierra sesión', (
+  testWidgets('Login válido abre Home con el correo y cierra sesión', (
     tester,
   ) async {
     await pumpApp(tester);
 
     await tester.enterText(
       inputField('Correo electrónico'),
-      AuthStore.demoEmail,
+      'usuario@dominio.com',
     );
-    await tester.enterText(inputField('Contraseña'), AuthStore.demoPassword);
+    await tester.enterText(inputField('Contraseña'), 'clave');
     await tester.tap(find.text('Iniciar sesión'));
     await tester.pumpAndSettle();
 
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.text(AuthStore.demoEmail), findsOneWidget);
+    expect(find.text('usuario@dominio.com'), findsOneWidget);
 
     await tester.tap(find.text('Cerrar sesión'));
     await tester.pumpAndSettle();
@@ -70,12 +73,13 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
   });
 
-  testWidgets('Mantener presionado el logo abre Componentes', (tester) async {
+  testWidgets('Google muestra "Funcionalidad no disponible"', (tester) async {
     await pumpApp(tester);
 
-    await tester.longPress(find.byType(GradientIconBadge));
-    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Google'));
+    await tester.tap(find.text('Google'));
+    await tester.pump();
 
-    expect(find.byType(ComponentsScreen), findsOneWidget);
+    expect(find.text('Funcionalidad no disponible'), findsOneWidget);
   });
 }
