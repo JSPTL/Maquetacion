@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
-import 'components_screen.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
-  static const wrongCredentialsMessage = 'Correo o contraseña incorrectos';
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -52,7 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordFocus = FocusNode();
 
   bool _submitted = false;
-  String? _authError;
 
   @override
   void dispose() {
@@ -67,11 +63,14 @@ class _LoginScreenState extends State<LoginScreen> {
       _submitted ? Validators.email(_emailController.text) : null;
 
   String? get _passwordError => _submitted
-      ? Validators.loginPassword(_passwordController.text) ?? _authError
+      ? Validators.required(
+          _passwordController.text,
+          'La contraseña es obligatoria',
+        )
       : null;
 
   void _onFieldChanged(String _) {
-    if (_submitted) setState(() => _authError = null);
+    if (_submitted) setState(() {});
   }
 
   void _open(Widget screen) {
@@ -79,10 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _submit() {
-    setState(() {
-      _submitted = true;
-      _authError = null;
-    });
+    setState(() => _submitted = true);
 
     if (_emailError != null) {
       _emailFocus.requestFocus();
@@ -94,19 +90,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     FocusScope.of(context).unfocus();
-    if (authStore.login(_emailController.text, _passwordController.text)) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (_) => false,
-      );
-      return;
-    }
-
-    setState(() => _authError = LoginScreen.wrongCredentialsMessage);
-    showAppMessage(
-      context,
-      LoginScreen.wrongCredentialsMessage,
-      type: AppMessageType.error,
+    session.email = _emailController.text.trim();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (_) => false,
     );
   }
 
@@ -122,15 +109,12 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: GestureDetector(
-              onLongPress: () => _open(const ComponentsScreen()),
-              child: const GradientIconBadge(
-                icon: Icons.lock_outline_rounded,
-                gradient: AppGradients.purplePink,
-                size: 72,
-                radius: 18,
-              ),
+          const Center(
+            child: GradientIconBadge(
+              icon: Icons.lock_outline_rounded,
+              gradient: AppGradients.purplePink,
+              size: 72,
+              radius: 18,
             ),
           ),
           const SizedBox(height: 20),

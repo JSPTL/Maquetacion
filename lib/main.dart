@@ -35,66 +35,16 @@ class MaquetacionApp extends StatelessWidget {
   }
 }
 
-class AppUser {
-  AppUser({required this.name, required this.email, required this.password});
+/// Datos compartidos entre pantallas.
+class AppSession {
+  /// Correo ingresado en Login o Registro, se muestra en Home.
+  String? email;
 
-  final String name;
-  final String email;
-  String password;
-}
-
-class AuthStore {
-  static const demoEmail = 'usuario@correo.com';
-  static const demoPassword = 'Password1';
-
-  final Map<String, AppUser> _users = {
-    demoEmail: AppUser(
-      name: 'Usuario Demo',
-      email: demoEmail,
-      password: demoPassword,
-    ),
-  };
-
-  AppUser? currentUser;
+  /// Correo ingresado en Recuperar contraseña, se muestra en Código.
   String? recoveryEmail;
-
-  static String _normalize(String email) => email.trim().toLowerCase();
-
-  bool login(String email, String password) {
-    final user = _users[_normalize(email)];
-    if (user == null || user.password != password) return false;
-    currentUser = user;
-    return true;
-  }
-
-  bool register({
-    required String name,
-    required String email,
-    required String password,
-  }) {
-    final key = _normalize(email);
-    if (_users.containsKey(key)) return false;
-    currentUser = _users[key] = AppUser(
-      name: name.trim(),
-      email: key,
-      password: password,
-    );
-    return true;
-  }
-
-  void startPasswordRecovery(String email) {
-    recoveryEmail = _normalize(email);
-  }
-
-  void resetPassword(String newPassword) {
-    _users[recoveryEmail]?.password = newPassword;
-    recoveryEmail = null;
-  }
-
-  void logout() => currentUser = null;
 }
 
-final authStore = AuthStore();
+final session = AppSession();
 
 class AppColors {
   AppColors._();
@@ -273,19 +223,8 @@ class Validators {
     return null;
   }
 
-  static String? fullName(String value) =>
-      value.trim().isEmpty ? 'El nombre completo es obligatorio' : null;
-
-  static String? loginPassword(String value) =>
-      value.isEmpty ? 'La contraseña es obligatoria' : null;
-
-  static String? newPassword(String value) {
-    if (value.isEmpty) return 'La contraseña es obligatoria';
-    if (!hasMinLength(value)) {
-      return 'La contraseña debe tener mínimo $minPasswordLength caracteres';
-    }
-    return null;
-  }
+  static String? required(String value, String message) =>
+      value.trim().isEmpty ? message : null;
 
   static String? confirmPassword(String password, String confirmation) {
     if (confirmation.isEmpty) return 'Confirma tu contraseña';
@@ -302,7 +241,7 @@ class Validators {
       hasMinLength(value) && hasUppercase(value) && hasNumber(value);
 }
 
-enum AppMessageType { info, success, error }
+enum AppMessageType { info, success }
 
 void showAppMessage(
   BuildContext context,
@@ -315,7 +254,6 @@ void showAppMessage(
       Icons.check_circle_outline_rounded,
       AppColors.success,
     ),
-    AppMessageType.error => (Icons.error_outline_rounded, AppColors.error),
   };
   final width = math.min(420.0, MediaQuery.sizeOf(context).width - 48);
 
@@ -500,7 +438,7 @@ class AuthLayout extends StatelessWidget {
     final content = Padding(
       padding: const EdgeInsets.fromLTRB(
         horizontalPadding,
-        32,
+        16,
         horizontalPadding,
         24,
       ),
@@ -522,34 +460,124 @@ class AuthLayout extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: DecorativeBackground(
         shapes: decorations,
-        child: CustomScrollView(
-          slivers: [
-            if (centered)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: _constrained(content),
-              )
-            else
-              SliverToBoxAdapter(child: _constrained(content)),
-            if (footer != null)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      24,
-                      horizontalPadding,
-                      30,
+        child: Column(
+          children: [
+            const AppStatusBar(),
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  if (centered)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _constrained(content),
+                    )
+                  else
+                    SliverToBoxAdapter(child: _constrained(content)),
+                  if (footer != null)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            24,
+                            horizontalPadding,
+                            30,
+                          ),
+                          child: footer,
+                        ),
+                      ),
                     ),
-                    child: footer,
-                  ),
-                ),
+                ],
               ),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Barra de estado del diseño móvil (hora, señal, wifi y batería).
+class AppStatusBar extends StatelessWidget {
+  const AppStatusBar({super.key});
+
+  static const height = 47.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Row(
+          children: [
+            Text(
+              '9:41',
+              style: AppTextStyles.button.copyWith(
+                fontSize: 16,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            const Icon(
+              Icons.signal_cellular_alt_rounded,
+              size: 18,
+              color: AppColors.textPrimary,
+            ),
+            const SizedBox(width: 5),
+            const Icon(
+              Icons.wifi_rounded,
+              size: 18,
+              color: AppColors.textPrimary,
+            ),
+            const SizedBox(width: 5),
+            const _BatteryIcon(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BatteryIcon extends StatelessWidget {
+  const _BatteryIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 25,
+          height: 12,
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: AppColors.textPrimary.withValues(alpha: 0.4),
+            ),
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.textPrimary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        const SizedBox(width: 1),
+        Container(
+          width: 2,
+          height: 4,
+          decoration: BoxDecoration(
+            color: AppColors.textPrimary.withValues(alpha: 0.4),
+            borderRadius: const BorderRadius.horizontal(
+              right: Radius.circular(1),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

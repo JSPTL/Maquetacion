@@ -62,7 +62,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
   Timer? _timer;
   int _secondsLeft = VerifyCodeScreen.resendSeconds;
 
-  String get _email => authStore.recoveryEmail ?? VerifyCodeScreen.emailFallback;
+  String get _email => session.recoveryEmail ?? VerifyCodeScreen.emailFallback;
   bool get _isComplete => _controllers.every((c) => c.text.isNotEmpty);
   bool get _canResend => _secondsLeft == 0;
 
@@ -117,10 +117,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
     _focusNodes[index - 1].requestFocus();
   }
 
-  void _resendCode() {
-    setState(_startCountdown);
-    showAppMessage(context, 'Te reenviamos el código a $_email');
-  }
+  void _resendCode() => setState(_startCountdown);
 
   void _submit() {
     if (!_isComplete) return;

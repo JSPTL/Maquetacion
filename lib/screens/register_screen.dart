@@ -6,10 +6,6 @@ import 'home_screen.dart';
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
-  static const emailTakenError = 'Este correo ya está registrado';
-  static const termsRequiredMessage =
-      'Acepta los Términos y condiciones para crear tu cuenta';
-
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
@@ -56,7 +52,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _submitted = false;
   bool _acceptedTerms = false;
-  bool _emailTaken = false;
 
   @override
   void dispose() {
@@ -70,17 +65,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  String? get _nameError =>
-      _submitted ? Validators.fullName(_nameController.text) : null;
+  String? get _nameError => _submitted
+      ? Validators.required(
+          _nameController.text,
+          'El nombre completo es obligatorio',
+        )
+      : null;
 
-  String? get _emailError {
-    if (!_submitted) return null;
-    return Validators.email(_emailController.text) ??
-        (_emailTaken ? RegisterScreen.emailTakenError : null);
-  }
+  String? get _emailError =>
+      _submitted ? Validators.email(_emailController.text) : null;
 
-  String? get _passwordError =>
-      _submitted ? Validators.newPassword(_passwordController.text) : null;
+  String? get _passwordError => _submitted
+      ? Validators.required(
+          _passwordController.text,
+          'La contraseña es obligatoria',
+        )
+      : null;
 
   String? get _confirmError => _submitted
       ? Validators.confirmPassword(
@@ -99,31 +99,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_submitted) setState(() {});
   }
 
-  void _onEmailChanged(String _) {
-    if (_submitted) setState(() => _emailTaken = false);
-  }
-
   void _submit() {
+    if (!_acceptedTerms) return;
     FocusScope.of(context).unfocus();
-    if (!_acceptedTerms) {
-      showAppMessage(context, RegisterScreen.termsRequiredMessage);
-      return;
-    }
-    setState(() {
-      _submitted = true;
-      _emailTaken = false;
-    });
+    setState(() => _submitted = true);
     if (_hasErrors) return;
 
-    final created = authStore.register(
-      name: _nameController.text,
-      email: _emailController.text,
-      password: _passwordController.text,
-    );
-    if (!created) {
-      setState(() => _emailTaken = true);
-      return;
-    }
+    session.email = _emailController.text.trim();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const HomeScreen()),
       (_) => false,
@@ -166,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             controller: _emailController,
             focusNode: _emailFocus,
             errorText: _emailError,
-            onChanged: _onEmailChanged,
+            onChanged: _onFieldChanged,
             onSubmitted: (_) => _passwordFocus.requestFocus(),
           ),
           const SizedBox(height: _fieldGap),
